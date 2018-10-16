@@ -60,45 +60,6 @@ int main(){
     return 0;
 }
 
-TipoRet createTable(string nombreTabla){
-    TipoRet salida = NO_IMPLEMENTADA;
-    return salida;
-}
-
-TipoRet dropTable(string nombreTabla){
-
-    TipoRet res = NO_IMPLEMENTADA;
-    cout << "estas en dropTable, parmetros: "<<nombreTabla <<endl;
-    return res;
-}
-
-TipoRet addCol(string nombreTabla, string nombreCol){
-    TipoRet res = NO_IMPLEMENTADA;
-    cout << "estas en addCol, parmetros: "<<nombreTabla<<", "<<nombreCol <<endl;
-    return res;
-}
-
-TipoRet dropCol(string nombreTabla, string nombreCol){
-    cout << "estas en dropCol, parmetros: "<<nombreTabla<<", "<<nombreCol <<endl;
-}
-
-TipoRet insertInto(string nombreTabla, string valoresTupla){
-    cout << "estas en insertInto, parmetros: "<<nombreTabla<<", "<< valoresTupla <<endl;
-}
-
-TipoRet deleteFrom(string nombreTabla, string condicionEliminar){
-    cout << "estas en deleteFrom, parmetros: "<<nombreTabla<<", "<<condicionEliminar <<endl;
-}
-
-TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar ){
-    cout << "estas en update, parmetros: "<<nombreTabla<<", "<<condicionModificar <<", "<< columnaModificar<<", "<< valorModificar <<endl;
-}
-
-TipoRet printDataTable(string nombreTabla){
-
-    cout << "estas en printDataTable, parmetros: "<< nombreTabla <<endl;
-}
-
 void printHelp(){
     cout <<endl<< "AYUDA DE COMANDOS: "<<endl;
     cout << "Nota: todos los comandos son 'case sensitive' "<<endl;
@@ -141,29 +102,29 @@ void readInput(string comando){
     cout << "el largo del comando es: " << comando.length()<<endl;
 
     if( !argALL.empty() ){
-        size_t fin = argALL.find(":")
+        size_t fin = argALL.find(":");
     }else{
         cout << "NO HAY ARGUMENTOS" <<endl;
     }
 
-    if( sentencia == "createTable" )
-        createTable("nombreTabla");
-    if( sentencia == "dropTable" )
-        dropTable("nombreTabla");
-    if( sentencia == "addCol" )
-        addCol("nombreTabla","nombreCol");
-    if( sentencia == "dropCol" )
-        dropCol("nombreTavoid printHelp()bla","nombreCol");
-    if( sentencia == "insertInto" )
-        insertInto("nombreTabla","valoresTupla");
-    if( sentencia == "deleteFrom")
-        deleteFrom("nombreTabla", "condicionEliminar");
-    if( sentencia == "update" )
-        update("nombreTabla", "condicionModificar", "columnaModificar", "valorModificar");
-    if( sentencia == "printDataTable" )
-        printDataTable( "nombreTabla");
-    if( sentencia == "help" )
-        printHelp();
+    if( sentencia == "createTable" ) //createTable("nombreTabla")
+        cout << "Operacion: createTable(\"nombreTabla\")"<< endl;
+    if( sentencia == "dropTable" ) // dropTable("nombreTabla");
+        cout << "Operacion: dropTable(\"nombreTabla\")" <<endl;
+    if( sentencia == "addCol" ) //addCol("nombreTabla","nombreCol")
+        cout << "Operacion: addCol(\"nombreTabla\",\"nombreCol\")"<<endl;
+    if( sentencia == "dropCol" )//   dropCol("nombreTabla","nombreCol")
+        cout << "Operacion: dropCol(\"nombreTabla\",\"nombreCol\")"<<endl;
+    if( sentencia == "insertInto" )// insertInto("nombreTabla","valoresTupla")
+        cout << "Operacion: insertInto(\"nombreTabla\",\"valoresTupla\")" <<endl;
+    if( sentencia == "deleteFrom") //deleteFrom("nombreTabla", "condicionEliminar")
+        cout << "Operacion: deleteFrom(\"nombreTabla\", \"condicionEliminar\")" <<endl;
+    if( sentencia == "update" ) // update("nombreTabla", "condicionModificar", "columnaModificar", "valorModificar")
+        cout << "Operacion: update(\"nombreTabla\", \"condicionModificar\", \"columnaModificar\", \"valorModificar\")"<<endl;
+    if( sentencia == "printDataTable" )// printDataTable( "nombreTabla");
+        cout << "Operacion: printDataTable( \"nombreTabla\")" <<endl;
+    if( sentencia == "help" )//  printHelp()
+        cout << "Operacion: printHelp()" << endl;
     if(sentencia!="createTable" && sentencia!="dropTable" && sentencia!="addCol" && sentencia!="dropCol" && sentencia!="insertInto" && sentencia!="deleteFrom" && sentencia!="update" && sentencia!="printDataTable" && sentencia!="help" )
         cout << "\t¡EL comando '" << comando <<"' no es valido!" << '\n';
 
@@ -171,5 +132,5 @@ void readInput(string comando){
 }
 
 bool addTabla( Tabla &T, string nombreTabla){
-    p
+
 }
