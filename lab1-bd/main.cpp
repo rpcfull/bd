@@ -8,45 +8,51 @@ using namespace std;
 enum _retorno{OK, ERROR, NO_IMPLEMENTADA};
 typedef _retorno TipoRet;
 
+struct nodoListaParamentro{
+    string info;
+    nodoListaParamentro * sig;
+};
+typedef nodoListaParamentro * Parametro;
 
-struct nodoCelda{
+struct nodoListaCelda{
     int nroCelda;
     string info;
-    nodoCelda * sig;
+    nodoListaCelda * sig;
 };
-typedef nodoCelda * Celda;
+typedef nodoListaCelda * Celda;
 
-struct nodoCampo{
+struct nodoListaCampo{
 	string nombreCampo;
 	string tipoCampo;
 	int nroCampo;
-	nodoCampo * sig;
+	nodoListaCampo * sig;
 };
-typedef nodoCampo * Campo;
+typedef nodoListaCampo * Campo;
 
-struct  nodoTupla{
+struct  nodoListaTupla{
 	int indice;
 	Celda celda;
 };
-typedef nodoTupla * Tupla;
+typedef nodoListaTupla * Tupla;
 
-struct nodoTabla{
+struct nodoListaTabla{
     string nombre;
     int nroCampos = 0;
     Campo campo;
     Tupla tupla;
-    nodoTabla * sig;
+    nodoListaTabla * sig;
 };
-typedef nodoTabla * Tabla;
+typedef nodoListaTabla * Tabla;
 
 /** FUNCIONES AUXILIARES */
 void readInput( string comando ); //Interpreta el comando de entrada
 void printHelp(); // Imprime la Ayuda con los comandos validos
 bool addTabla( Tabla &T, string nombreTabla );
+Parametro getParametros(string argumentos, int n);
 
 
 int main(){
-    Tabla T = new nodoTabla; //dummy
+    Tabla T = new nodoListaTabla; //dummy
     T->sig = NULL;
 
     string comando;
@@ -85,6 +91,7 @@ void printHelp(){
 void readInput(string comando){
     string blanco = " ";
     string actual;
+    int nroComas = 0;
     for (int i=0; i<comando.length(); ++i){ // Borro todos los espacios en blanco
         actual = comando[i];
         if( blanco == actual ){
@@ -92,6 +99,8 @@ void readInput(string comando){
             comando.erase(i, 1);
             i--;
         }
+        if( actual == ",")
+            nroComas++;
     }
     size_t posApertura = comando.find("(");      // posicion del parentesis de apertura
     string sentencia = comando.substr(0,posApertura); //setencia ingresada con espacios
@@ -107,8 +116,14 @@ void readInput(string comando){
         cout << "NO HAY ARGUMENTOS" <<endl;
     }
 
+    Parametro LParam;
+    LParam = NULL;
+    LParam = getParametros(argALL, nroComas);//devuelve una lista con los parametros
+    cout << LParam->sig->info <<endl<<endl;
+
     if( sentencia == "createTable" ) //createTable("nombreTabla")
         cout << "Operacion: createTable(\"nombreTabla\")"<< endl;
+
     if( sentencia == "dropTable" ) // dropTable("nombreTabla");
         cout << "Operacion: dropTable(\"nombreTabla\")" <<endl;
     if( sentencia == "addCol" ) //addCol("nombreTabla","nombreCol")
@@ -127,8 +142,29 @@ void readInput(string comando){
         cout << "Operacion: printHelp()" << endl;
     if(sentencia!="createTable" && sentencia!="dropTable" && sentencia!="addCol" && sentencia!="dropCol" && sentencia!="insertInto" && sentencia!="deleteFrom" && sentencia!="update" && sentencia!="printDataTable" && sentencia!="help" )
         cout << "\t¡EL comando '" << comando <<"' no es valido!" << '\n';
+}
 
+Parametro getParametros(string argumentos, int n){
+    Parametro aux, res = new nodoListaParamentro;
+    res->sig = NULL;
+    aux = res;
+    int posicion= 0;
 
+    if( !argumentos.empty() && n==0 ){//Si no tiene coma pero no esta vacio hay un argumento
+        aux->sig = new nodoListaParamentro;
+        aux = aux->sig;
+        aus->sig = NULL;
+        aux->info = argumentos;
+    }
+    if( n > 0 ){
+        for(int i=0; i<=n; i++){
+            aux->sig = new nodoListaParamentro;
+            aux = aux->sig;
+            aux->info = argumentos.find()
+        }
+    }
+
+    return res;
 }
 
 bool addTabla( Tabla &T, string nombreTabla){
