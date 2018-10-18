@@ -27,6 +27,7 @@ struct nodoListaCampo{
 	string nombreCampo;
 	string tipoCampo;
 	int nroCampo;
+	nodoListaCampo * ant;
 	nodoListaCampo * sig;
 };
 typedef nodoListaCampo * ListaCampo;
@@ -34,6 +35,8 @@ typedef nodoListaCampo * ListaCampo;
 struct  nodoListaTupla{
 	int indice;
 	ListaCelda celda;
+	nodoListaTupla * ant;
+	nodoListaTupla * sig;
 };
 typedef nodoListaTupla * ListaTupla;
 
@@ -42,6 +45,7 @@ struct nodoListaTabla{
     int nroCampos = 0;
     ListaCampo campo;
     ListaTupla tupla;
+    nodoListaTabla * ant;
     nodoListaTabla * sig;
 };
 typedef nodoListaTabla * ListaTabla;
@@ -49,17 +53,14 @@ typedef nodoListaTabla * ListaTabla;
 /** FUNCIONES AUXILIARES */
 void readInput( string comando ); //Interpreta el comando de entrada
 void printHelp(); // Imprime la Ayuda con los comandos validos
-bool addTabla( ListaTabla &T, string nombreTabla );
-string getParametros(ListaAgr L);
+bool addTabla( ListaTabla T, string nombreTabla );
+string getParametro(ListaAgr L, int n);
 void imprimirArg(ListaAgr L);
 void clearArg(ListaAgr L);
 void addArgFinal(ListaAgr L, string arg);
 void cargarListaArg(ListaAgr L, string allArg);
 
 int main(){
-    ListaTabla T = new nodoListaTabla; //dummy
-    T->sig = NULL;
-
     string comando;
     while(comando!="exit"){
         getline(cin, comando);
@@ -96,6 +97,8 @@ void printHelp(){
 
 /****************     LEE EL INGRESO DE LOS COMANDOS     ************************/
 void readInput(string comando){
+    ListaTabla T = new nodoListaTabla; //Crea una Tabla dummy
+    T->sig = NULL;
     string actual;
     int nroComas =0;
     int nroArg=0;
@@ -135,8 +138,9 @@ void readInput(string comando){
     imprimirArg(listaArg);
 
 
-    if( sentencia=="createTable" && nroArg==1 ){ //createTable( nombreTabla)
-
+    if( sentencia=="createTable" ){ //createTable( nombreTabla)
+        //cout<<"El nombre de la tabla es ->"<<getParametro(listaArg, 1)<<endl;
+        addTabla(T, getParametro(listaArg, 1));
     }
 
     if( sentencia=="dropTable" && nroArg==1 ){ // dropTable( nombreTabla )
@@ -165,9 +169,12 @@ void readInput(string comando){
         cout << "\t¡EL comando '" << comando <<"' no es valido!" << '\n';
 }
 
-string getParametro(ListaAgr L){
-    string dato;
-    return dato;
+//Obtiene el parametro en la posicion n de la lista. Nota: debe recibir un n valido
+string getParametro(ListaAgr L, int n){
+    if( L!=NULL && L->pos!=n )
+        return getParametro(L->sig, n);
+    if( L->pos == n )
+        return L->info;
 }
 
 void addArgFinal(ListaAgr L, string arg){
@@ -213,6 +220,16 @@ void cargarListaArg(ListaAgr L, string allArg){
 }
 
 
-bool addTabla( ListaTabla &T, string nombreTabla){
 
+
+bool addTabla( ListaTabla T, string nombreTabla){
+    ListaTabla nuevo = new nodoListaTabla;
+    ListaTabla aux = T;
+    nuevo->nombre = nombreTabla;
+    nuevo->nroCampos = 0;
+    nuevo->sig = NULL;
+    while( aux->sig!=NULL )
+        aux = aux->sig;
+    aux->sig = nuevo;
+    nuevo->ant = aux;
 }
