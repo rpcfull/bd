@@ -8,12 +8,20 @@ using namespace std;
 enum _retorno{OK, ERROR, NO_IMPLEMENTADA};
 typedef _retorno TipoRet;
 
+struct nodoListaArg{
+    int pos;
+    string info;
+    nodoListaArg * ant;
+    nodoListaArg * sig;
+};
+typedef nodoListaArg * ListaAgr;
+
 struct nodoListaCelda{
     int nroCelda;
     string info;
     nodoListaCelda * sig;
 };
-typedef nodoListaCelda * Celda;
+typedef nodoListaCelda * ListaCelda;
 
 struct nodoListaCampo{
 	string nombreCampo;
@@ -21,31 +29,35 @@ struct nodoListaCampo{
 	int nroCampo;
 	nodoListaCampo * sig;
 };
-typedef nodoListaCampo * Campo;
+typedef nodoListaCampo * ListaCampo;
 
 struct  nodoListaTupla{
 	int indice;
-	Celda celda;
+	ListaCelda celda;
 };
-typedef nodoListaTupla * Tupla;
+typedef nodoListaTupla * ListaTupla;
 
 struct nodoListaTabla{
     string nombre;
     int nroCampos = 0;
-    Campo campo;
-    Tupla tupla;
+    ListaCampo campo;
+    ListaTupla tupla;
     nodoListaTabla * sig;
 };
-typedef nodoListaTabla * Tabla;
+typedef nodoListaTabla * ListaTabla;
 
 /** FUNCIONES AUXILIARES */
 void readInput( string comando ); //Interpreta el comando de entrada
 void printHelp(); // Imprime la Ayuda con los comandos validos
-bool addTabla( Tabla &T, string nombreTabla );
-string getParametros(string allArg, int n);
+bool addTabla( ListaTabla &T, string nombreTabla );
+string getParametros(ListaAgr L);
+void imprimirArg(ListaAgr L);
+void clearArg(ListaAgr L);
+void addArgFinal(ListaAgr L, string arg);
+void cargarListaArg(ListaAgr L, string allArg);
 
 int main(){
-    Tabla T = new nodoListaTabla; //dummy
+    ListaTabla T = new nodoListaTabla; //dummy
     T->sig = NULL;
 
     string comando;
@@ -114,6 +126,14 @@ void readInput(string comando){
     cout << "El largo del comando es: " << comando.length()<<endl;
     cout << "Numero de argumentos: " << nroArg <<endl;
 
+    //Se cargan los argumentos en una lista
+    ListaAgr listaArg = new nodoListaArg;
+    listaArg->pos = 0;
+    listaArg->ant = NULL;
+    listaArg->sig = NULL;
+    cargarListaArg(listaArg, allArg);
+    imprimirArg(listaArg);
+
 
     if( sentencia=="createTable" && nroArg==1 ){ //createTable( nombreTabla)
 
@@ -145,24 +165,54 @@ void readInput(string comando){
         cout << "\t¡EL comando '" << comando <<"' no es valido!" << '\n';
 }
 
-string getParametro(string allArg, int nroArg){
-    string c;
-    int nroComas;
-    if( !allArg.empty() ){ //Cuenta la cantidad y la posicion de las comas en los argumentos
-        for(int j=0; j< allArg.length(); j++ ){
-            c = allArg[j];
-            if( c == "," ){
-                nroComas++;
-            }
-        }
-    }else{
-        cout << "NO HAY ARGUMENTOS" <<endl;
-    }
+string getParametro(ListaAgr L){
+    string dato;
+    return dato;
+}
 
+void addArgFinal(ListaAgr L, string arg){
+    ListaAgr nuevo = new nodoListaArg;
+    ListaAgr aux = L;
+    nuevo->info = arg;
+    nuevo->sig = NULL;
+    while( aux->sig!=NULL )
+        aux = aux->sig;
+    aux->sig = nuevo;
+    nuevo->ant = aux;
+    nuevo->pos = aux->pos+1;
+}
+
+void clearArg(ListaAgr L){
+    ListaAgr aux = L;
+    aux = aux->sig;
+}
+
+void imprimirArg(ListaAgr L){
+    if( L != NULL ){
+        cout<< "|"<<L->pos<< " = "<<L->info<<"|"<<endl;
+        imprimirArg( L->sig );
+    }
+}
+
+void cargarListaArg(ListaAgr L, string allArg){
+    int largo = allArg.length();
+    char parametros[largo];
+    int inicio=0;
+    string dato;
+    strcpy(parametros,allArg.c_str());
+
+    for(int i=0; i<= largo; i++){
+        if( parametros[i]!=','){
+            dato += parametros[i];
+        }else{
+            addArgFinal(L, dato);
+            dato="";
+        }
+    }
+    addArgFinal(L, dato);
 }
 
 
-
-bool addTabla( Tabla &T, string nombreTabla){
+bool addTabla( ListaTabla &T, string nombreTabla){
 
 }
