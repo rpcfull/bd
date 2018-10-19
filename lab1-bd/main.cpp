@@ -50,6 +50,16 @@ struct nodoListaTabla{
 };
 typedef nodoListaTabla * ListaTabla;
 
+//** OPERACIONES ***/
+TipoRet createTable(string nombreTabla);
+TipoRet dropTable(string nombreTabla);
+TipoRet addCol(string nombreTabla, string nombreCol);
+TipoRet dropCol(string nombreTabla, string nombreCol);
+TipoRet insertInto(string nombreTabla, string valoresTupla);
+TipoRet deleteFrom(string nombreTabla, string condicionEliminar);
+TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar );
+TipoRet printDataTable(string nombreTabla);
+
 /** FUNCIONES AUXILIARES */
 void readInput( string comando ); //Interpreta el comando de entrada
 void printHelp(); // Imprime la Ayuda con los comandos validos
@@ -69,7 +79,53 @@ int main(){
         else
             cout << "No ha ingresado ningun comando" <<endl;
     }
+    cout<<endl<< " Bye..." <<endl;
     return 0;
+}
+
+TipoRet createTable(string nombreTabla){
+    TipoRet retorno = NO_IMPLEMENTADA;
+    cout<<nombreTabla;
+    int pos = nombreTabla.find(":");
+    string nombre = nombreTabla.substr(0, pos);
+    nombreTabla.erase(0, pos);
+
+
+    return retorno;
+}
+
+TipoRet dropTable(string nombreTabla){
+
+    TipoRet res = NO_IMPLEMENTADA;
+    cout << "estas en dropTable, parmetros: "<<nombreTabla <<endl;
+    return res;
+}
+
+TipoRet addCol(string nombreTabla, string nombreCol){
+    TipoRet res = NO_IMPLEMENTADA;
+    cout << "estas en addCol, parmetros: "<<nombreTabla<<", "<<nombreCol <<endl;
+    return res;
+}
+
+TipoRet dropCol(string nombreTabla, string nombreCol){
+    cout << "estas en dropCol, parmetros: "<<nombreTabla<<", "<<nombreCol <<endl;
+}
+
+TipoRet insertInto(string nombreTabla, string valoresTupla){
+    cout << "estas en insertInto, parmetros: "<<nombreTabla<<", "<< valoresTupla <<endl;
+}
+
+TipoRet deleteFrom(string nombreTabla, string condicionEliminar){
+    cout << "estas en deleteFrom, parmetros: "<<nombreTabla<<", "<<condicionEliminar <<endl;
+}
+
+TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar ){
+    cout << "estas en update, parmetros: "<<nombreTabla<<", "<<condicionModificar <<", "<< columnaModificar<<", "<< valorModificar <<endl;
+}
+
+TipoRet printDataTable(string nombreTabla){
+
+    cout << "estas en printDataTable, parmetros: "<< nombreTabla <<endl;
 }
 
 void printHelp(){
@@ -140,32 +196,40 @@ void readInput(string comando){
 
     if( sentencia=="createTable" ){ //createTable( nombreTabla)
         //cout<<"El nombre de la tabla es ->"<<getParametro(listaArg, 1)<<endl;
-        addTabla(T, getParametro(listaArg, 1));
+        string nombreTabla = getParametro(listaArg, 1);
+        string respuesta;
+        if ( addTabla(T, nombreTabla) ){
+            respuesta = "ok";
+            createTable( nombreTabla += respuesta );
+        }else{
+            respuesta = "error";
+            createTable( nombreTabla += respuesta );
+        }
     }
 
     if( sentencia=="dropTable" && nroArg==1 ){ // dropTable( nombreTabla )
-
+        cout<<"Sin terminar"<<endl;
     }
 
     if( sentencia == "addCol" && nroArg==2 ) {//addCol( nombreTabla, nombreCol )
-
+        cout<<"Sin terminar"<<endl;
     }
 
     if( sentencia == "dropCol" && nroArg==2 ){ //   dropCol( nombreTabla, nombreCol)
-
+        cout<<"Sin terminar"<<endl;
     }
 
     if( sentencia == "insertInto" && nroArg>1 )// insertInto( nombreTabla,valoresTupla")
-
+        cout<<"Sin terminar"<<endl;
     if( sentencia == "deleteFrom" && nroArg==1 ) //deleteFrom( nombreTabla, condicionEliminar )
-
+        cout<<"Sin terminar"<<endl;
     if( sentencia == "update" && nroArg>3  ) // update( nombreTabla, condicionModificar, columnaModificar, valorModificar)
-
+        cout<<"Sin terminar"<<endl;
     if( sentencia == "printDataTable" )// printDataTable( nombreTabla );
-
-    if( sentencia == "help" && nroArg==0  )//  printHelp()
+        cout<<"Sin terminar"<<endl;
+    if( sentencia == "help"  )//  printHelp()
         printHelp();
-    if(sentencia!="createTable" && sentencia!="dropTable" && sentencia!="addCol" && sentencia!="dropCol" && sentencia!="insertInto" && sentencia!="deleteFrom" && sentencia!="update" && sentencia!="printDataTable" && sentencia!="help" )
+    if(sentencia!="createTable" && sentencia!="dropTable" && sentencia!="addCol" && sentencia!="dropCol" && sentencia!="insertInto" && sentencia!="deleteFrom" && sentencia!="update" && sentencia!="printDataTable" && sentencia!="help" && sentencia!="exit" )
         cout << "\t¡EL comando '" << comando <<"' no es valido!" << '\n';
 }
 
@@ -189,12 +253,12 @@ void addArgFinal(ListaAgr L, string arg){
     nuevo->pos = aux->pos+1;
 }
 
-void clearArg(ListaAgr L){
+void clearArg(ListaAgr L){//terminar
     ListaAgr aux = L;
     aux = aux->sig;
 }
 
-void imprimirArg(ListaAgr L){
+void imprimirArg(ListaAgr L){//esta funcion es solo para modo testing
     if( L != NULL ){
         cout<< "|"<<L->pos<< " = "<<L->info<<"|"<<endl;
         imprimirArg( L->sig );
@@ -219,9 +283,6 @@ void cargarListaArg(ListaAgr L, string allArg){
     addArgFinal(L, dato);
 }
 
-
-
-
 bool addTabla( ListaTabla T, string nombreTabla){
     ListaTabla nuevo = new nodoListaTabla;
     ListaTabla aux = T;
@@ -232,4 +293,5 @@ bool addTabla( ListaTabla T, string nombreTabla){
         aux = aux->sig;
     aux->sig = nuevo;
     nuevo->ant = aux;
+    return true;
 }
