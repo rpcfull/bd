@@ -23,14 +23,14 @@ struct nodoListaCelda{
 };
 typedef nodoListaCelda * ListaCelda;
 
-struct nodoListaCampo{
-	string nombreCampo;
-	string tipoCampo;
-	int nroCampo;
-	nodoListaCampo * ant;
-	nodoListaCampo * sig;
+struct nodoListaColum{
+	string nombre;
+	bool PK;
+	int nroColum;
+	nodoListaColum * ant;
+	nodoListaColum * sig;
 };
-typedef nodoListaCampo * ListaCampo;
+typedef nodoListaColum * ListaColum;
 
 struct  nodoListaTupla{
 	int indice;
@@ -42,13 +42,16 @@ typedef nodoListaTupla * ListaTupla;
 
 struct nodoListaTabla{
     string nombre;
-    int nroCampos = 0;
-    ListaCampo campo;
+    int nroColumna = 0;
+    ListaColum columna;
     ListaTupla tupla;
     nodoListaTabla * ant;
     nodoListaTabla * sig;
 };
 typedef nodoListaTabla * ListaTabla;
+
+//**** GLOBALES *****//
+ListaTabla LTabla = new nodoListaTabla;
 
 //** OPERACIONES ***/
 TipoRet createTable(string nombreTabla);
@@ -61,7 +64,7 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
 TipoRet printDataTable(string nombreTabla);
 
 /** FUNCIONES AUXILIARES */
-void readInput( string comando ); //Interpreta el comando de entrada
+void readInput(ListaTabla T, string comando ); //Interpreta el comando de entrada
 void printHelp(); // Imprime la Ayuda con los comandos validos
 bool addTabla( ListaTabla T, string nombreTabla );
 string getParametro(ListaAgr L, int n);
@@ -71,39 +74,113 @@ void addArgFinal(ListaAgr L, string arg);
 void cargarListaArg(ListaAgr L, string allArg);
 
 int main(){
+    extern ListaTabla LTabla;
+    LTabla->ant = NULL;
+    LTabla->sig = NULL;
+
     string comando;
-    while(comando!="exit"){
+
+    while(comando!="exit"){ //mantiene la terminal esperando ordenes
         getline(cin, comando);
         if( comando.empty()!=true )
-            readInput(comando);
+            readInput(LTabla, comando);
         else
-            cout << "No ha ingresado ningun comando" <<endl;
+            cout << "\tNo ha ingresado ningun comando" <<endl;
     }
-    cout<<endl<< " Bye..." <<endl;
+    cout<<endl<< "\tBye..." <<endl;
+
     return 0;
 }
 
 TipoRet createTable(string nombreTabla){
-    TipoRet retorno = NO_IMPLEMENTADA;
-    cout<<nombreTabla;
-    int pos = nombreTabla.find(":");
-    string nombre = nombreTabla.substr(0, pos);
-    nombreTabla.erase(0, pos);
-
-
-    return retorno;
+    TipoRet res = OK;
+    extern ListaTabla LTabla;               //ListaTabla Global
+    ListaTabla aux = LTabla;
+    while( aux->sig!=NULL ){
+        if( aux->sig->nombre == nombreTabla ){//Valida si la tabla ya existe
+            res = ERROR;
+            return res;
+        }else{
+            aux = aux->sig;
+        }
+    }
+    ListaTabla nuevaTabla = new nodoListaTabla;
+    nuevaTabla->nombre = nombreTabla;
+    nuevaTabla->sig = NULL;
+    aux->sig = nuevaTabla;
+    nuevaTabla->ant = aux;
+    //Crea la columna dummy en la tabla nueva
+    ListaColum nuevaColum = new nodoListaColum;//Columna dummy
+    nuevaColum->ant = NULL;
+    nuevaColum->sig = NULL;
+    nuevaTabla->columna = nuevaColum;
+    //Crea la tupla dummy en la tabla nueva
+    ListaTupla nuevaTupla = new nodoListaTupla;//Tupla dummy
+    nuevaTupla->ant = NULL;
+    nuevaTupla->sig = NULL;
+    nuevaTupla->indice = 0;
+    nuevaTabla->tupla = nuevaTupla;
+    return res;
 }
 
 TipoRet dropTable(string nombreTabla){
-
-    TipoRet res = NO_IMPLEMENTADA;
-    cout << "estas en dropTable, parmetros: "<<nombreTabla <<endl;
+    TipoRet res = OK;
+    extern ListaTabla LTabla;               //Variable tipo listaTabla Global
+    ListaTabla aux = LTabla, borrar;
+    while( aux->sig!=NULL ){
+        if( aux->sig->nombre==nombreTabla ){
+            borrar = aux->sig;
+            if(aux->sig->sig!=NULL) //Verifica si hay un nodo despues del que voy a borrar
+                aux->sig->sig->ant = aux;
+            aux->sig = aux->sig->sig;
+            delete borrar;
+            return res;
+        }
+        aux = aux->sig;
+    }
+    res = ERROR;
     return res;
 }
 
 TipoRet addCol(string nombreTabla, string nombreCol){
-    TipoRet res = NO_IMPLEMENTADA;
-    cout << "estas en addCol, parmetros: "<<nombreTabla<<", "<<nombreCol <<endl;
+    TipoRet res = OK;
+    extern ListaTabla LTabla;               //ListaTabla Global
+    ListaTabla auxTabla = LTabla;
+
+    while( auxTabla!=NULL ){
+        //strcpy(nombre, auxTabla->nombre.c_str());
+        if( auxTabla->nombre == nombreTabla ){ //Si existe la tabla, se para apuntando sobre ella
+            if( auxTabla->tupla->sig == NULL ){ // Chequea que la tabla no tenga ningun registro cargado **/
+                ListaColum auxColmun = auxTabla->columna; //Puntero auxiliar para recorrer las columnas
+                while( auxColmun->sig != NULL ){//Recorre la lista de columnas y cheque que no exista una columna con el mismo nombre
+                    auxColmun = auxColmun->sig;
+                    if( auxColmun->nombre == nombreCol ){
+                        cout<<"\t¡Operacion no valida!. Ya existe una columna llamada \""<<nombreCol<<"\""<<endl;
+                        res = ERROR;
+                        return res;
+                    }
+                }
+                //Si no se encontro ninguna columna con el mismo nombre:
+                ListaColum nuevaColum = new nodoListaColum;
+                auxColmun->sig = nuevaColum;
+                nuevaColum->nombre = nombreCol;
+                nuevaColum->sig = NULL;
+                nuevaColum->ant = auxColmun;
+                nuevaColum->nroColum = auxColmun->nroColum+1;
+                if( auxColmun->ant == NULL )  // Verifica si la columna a agregar debe ser PK o no
+                    nuevaColum->PK = true;
+                return res;
+            }else{
+                cout<<"\t¡Operacion no valida!. La tabla ya tiene registros cargados"<<endl;
+                res = ERROR;
+                return res;
+            }
+        }else{
+            auxTabla = auxTabla->sig;
+        }
+    }
+    cout<<"\tLa tabla \""<<nombreTabla<<"\" no existe."<<endl;
+    res = ERROR;
     return res;
 }
 
@@ -124,7 +201,6 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
 }
 
 TipoRet printDataTable(string nombreTabla){
-
     cout << "estas en printDataTable, parmetros: "<< nombreTabla <<endl;
 }
 
@@ -144,7 +220,7 @@ void printHelp(){
     cout << "\t\tEjemplo:\t\tinsertInto(Personas, 3333111: Telma: Perez)"<<endl<<endl;
     cout << "  deleteFrom(nombreTabla, condicionEliminar) __________________________________* ELIMINA UN REGISTRO DE UNA TABLA *" <<endl<<endl;
     cout << "\t\tEjemplo:\t\tdeleteFrom(Personas, Perez)"<<endl<<endl;
-    cout << "  update(nombreTabla, condicionModificar, columnaModificar, valorModificar) ___* ACTUALIZA UN CAMPO DE UNA TABLA *" <<endl<<endl;
+    cout << "  update(nombreTabla, condicionModificar, columnaModificar, valorModificar) ___* caracterIZA UN CAMPO DE UNA TABLA *" <<endl<<endl;
     cout << "\t\tEjemplo:\t\tupdate(Personas, Nombre=Pepe: CI: 1555000)"<<endl<<endl;
     cout << "  printDataTable(Clientes) _________________________________________________* IMPRIME TODOS LOS REGISTROS DE UNA TABLA *" <<endl<<endl;
     cout << "\t\tEjemplo:\t\tprintDataTable(Clientes)"<<endl<<endl;
@@ -152,67 +228,60 @@ void printHelp(){
 
 
 /****************     LEE EL INGRESO DE LOS COMANDOS     ************************/
-void readInput(string comando){
-    ListaTabla T = new nodoListaTabla; //Crea una Tabla dummy
-    T->sig = NULL;
-    string actual;
+void readInput(ListaTabla LTabla, string comando){
+    string caracter;
     int nroComas =0;
     int nroArg=0;
-
-    for (int i=0; i<comando.length(); ++i){ // Borra todos los espacios en blanco y cuenta los parametros que trae
-        actual = comando[i];
-        if( actual==" " ){
+    for (int i=0; i<comando.length(); ++i){ // Borra todos los espacios en blanco, cuenta las comas y los dos puntos
+        caracter = comando[i];
+        if( caracter == " " ){
             comando.erase(i, 1);
             i--;
         }
-        if( actual=="," ){
+        if( caracter =="," ){
             nroComas++;
         }
     }
-
     size_t posApertura = comando.find("(");      // posicion del parentesis de apertura
     string sentencia = comando.substr(0,posApertura); //setencia ingresada con espacios
     size_t posCierre = comando.find(")");        // posicion de parentesis de cierre
     string allArg = comando.substr(posApertura+1 ,(posCierre - posApertura -1)); // obtiene el contenido de los argumentos
+    //Calcula la cantidad de parametros por el nro de comas y el largo
 
-    if( allArg.empty() || allArg == " " )
-        nroArg = 0;
-    else
-        nroArg = nroComas+1;
-
-    cout << "El comando ingresado es: " << sentencia <<endl;
+ /*   cout << "El comando ingresado es: " << sentencia <<endl;
     cout << "Y los argumentos son: " << allArg << endl;
     cout << "El largo del comando es: " << comando.length()<<endl;
     cout << "Numero de argumentos: " << nroArg <<endl;
+*/
 
-    //Se cargan los argumentos en una lista
+    //Se cargan los argumentos recibidos en una lista
     ListaAgr listaArg = new nodoListaArg;
     listaArg->pos = 0;
     listaArg->ant = NULL;
     listaArg->sig = NULL;
     cargarListaArg(listaArg, allArg);
-    imprimirArg(listaArg);
+//    imprimirArg(listaArg);
 
 
-    if( sentencia=="createTable" ){ //createTable( nombreTabla)
-        //cout<<"El nombre de la tabla es ->"<<getParametro(listaArg, 1)<<endl;
-        string nombreTabla = getParametro(listaArg, 1);
-        string respuesta;
-        if ( addTabla(T, nombreTabla) ){
-            respuesta = "ok";
-            createTable( nombreTabla += respuesta );
-        }else{
-            respuesta = "error";
-            createTable( nombreTabla += respuesta );
-        }
+    if( sentencia=="createTable" ){ //createTable( nombreTabla )
+        if( createTable(getParametro(listaArg, 1)) == 0 )
+            cout<< "\tQuery OK -> Se creo la tabla \""<<getParametro(listaArg,1)<<"\""<<endl;
+        else
+            cout<< "\tQuery ERROR -> La tabla "<<getParametro(listaArg,1)<<" ya existe"<<endl;
     }
 
-    if( sentencia=="dropTable" && nroArg==1 ){ // dropTable( nombreTabla )
-        cout<<"Sin terminar"<<endl;
+    if( sentencia=="dropTable" ){ // dropTable( nombreTabla )
+        if( dropTable(getParametro(listaArg, 1)) == 0 )
+            cout<< "\tQuery OK -> La Tabla \""<<getParametro(listaArg,1)<<"\" fue eliminada"<<endl;
+        else
+            cout<< "\tQuery ERROR -> La tabla \""<<getParametro(listaArg,1)<<"\" no existe"<<endl;
     }
 
-    if( sentencia == "addCol" && nroArg==2 ) {//addCol( nombreTabla, nombreCol )
-        cout<<"Sin terminar"<<endl;
+    if( sentencia == "addCol" ) {//addCol( nombreTabla, nombreCol )
+        if( addCol(getParametro(listaArg, 1), getParametro(listaArg, 2)) == 0 )
+            cout<< "\tQuery OK -> La columna \""<<getParametro(listaArg,2)<<"\" ha sido creada"<<endl;
+        else
+            cout<< "\tQuery ERROR -> No se puedo crear la columna \""<<getParametro(listaArg,2)<<"\""<<endl;
     }
 
     if( sentencia == "dropCol" && nroArg==2 ){ //   dropCol( nombreTabla, nombreCol)
@@ -237,7 +306,7 @@ void readInput(string comando){
 string getParametro(ListaAgr L, int n){
     if( L!=NULL && L->pos!=n )
         return getParametro(L->sig, n);
-    if( L->pos == n )
+    if( L!=NULL && L->pos == n )
         return L->info;
 }
 
@@ -272,7 +341,7 @@ void cargarListaArg(ListaAgr L, string allArg){
     string dato;
     strcpy(parametros,allArg.c_str());
 
-    for(int i=0; i<= largo; i++){
+    for(int i=0; i< largo; i++){
         if( parametros[i]!=','){
             dato += parametros[i];
         }else{
@@ -283,15 +352,3 @@ void cargarListaArg(ListaAgr L, string allArg){
     addArgFinal(L, dato);
 }
 
-bool addTabla( ListaTabla T, string nombreTabla){
-    ListaTabla nuevo = new nodoListaTabla;
-    ListaTabla aux = T;
-    nuevo->nombre = nombreTabla;
-    nuevo->nroCampos = 0;
-    nuevo->sig = NULL;
-    while( aux->sig!=NULL )
-        aux = aux->sig;
-    aux->sig = nuevo;
-    nuevo->ant = aux;
-    return true;
-}
