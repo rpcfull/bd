@@ -43,7 +43,7 @@ typedef nodoListaTupla * ListaTupla;
 
 struct nodoListaTabla{
     string nombre;
-    int nroColumna = 0;
+    int nroColumna;
     ListaColum columna;
     ListaTupla tupla;
     nodoListaTabla * ant;
@@ -76,6 +76,7 @@ void cargarListaArg(ListaAgr L, string allArg);
 
 int main(){
     extern ListaTabla LTabla;
+    LTabla->nroColumna = 0;
     LTabla->ant = NULL;
     LTabla->sig = NULL;
 
@@ -135,9 +136,9 @@ TipoRet dropTable(string nombreTabla){
     extern ListaTabla LTabla;               //Variable tipo listaTabla Global
     ListaTabla aux = LTabla, borrar;
     while( aux->sig!=NULL ){
-        if( aux->sig->nombre==nombreTabla ){
+        if( aux->sig->nombre == nombreTabla ){
             borrar = aux->sig;
-            if(aux->sig->sig!=NULL) //Verifica si hay un nodo despues del que voy a borrar
+            if( aux->sig->sig != NULL ) //Verifica si hay un nodo despues del que voy a borrar
                 aux->sig->sig->ant = aux;
             aux->sig = aux->sig->sig;
             delete borrar;
@@ -153,12 +154,12 @@ TipoRet addCol(string nombreTabla, string nombreCol){
     TipoRet res = NO_IMPLEMENTADA;
     extern ListaTabla LTabla;               //ListaTabla Global
     ListaTabla auxTabla = LTabla;
-
+    ListaColum auxColmun = NULL;
+    ListaColum nuevaColum = NULL;
     while( auxTabla!=NULL ){
-        //strcpy(nombre, auxTabla->nombre.c_str());
         if( auxTabla->nombre == nombreTabla ){ //Si existe la tabla, se para apuntando sobre ella
             if( auxTabla->tupla->sig == NULL ){ // Chequea que la tabla no tenga ningun registro cargado **/
-                ListaColum auxColmun = auxTabla->columna; //Puntero auxiliar para recorrer las columnas
+                auxColmun = auxTabla->columna; //Puntero auxiliar para recorrer las columnas
                 while( auxColmun->sig != NULL ){//Recorre la lista de columnas y cheque que no exista una columna con el mismo nombre
                     auxColmun = auxColmun->sig;
                     if( auxColmun->nombre == nombreCol ){
@@ -168,12 +169,13 @@ TipoRet addCol(string nombreTabla, string nombreCol){
                     }
                 }
                 //Si no se encontro ninguna columna con el mismo nombre:
-                ListaColum nuevaColum = new nodoListaColum;
+                nuevaColum = new nodoListaColum;
                 auxColmun->sig = nuevaColum;
                 nuevaColum->nombre = nombreCol;
                 nuevaColum->sig = NULL;
                 nuevaColum->ant = auxColmun;
                 nuevaColum->nroColum = auxColmun->nroColum+1;
+                auxTabla->nroColumna++;
                 if( auxColmun->ant == NULL )  // Verifica si la columna a agregar debe ser PK o no
                     nuevaColum->PK = true;
                 res = OK;
@@ -193,7 +195,74 @@ TipoRet addCol(string nombreTabla, string nombreCol){
 }
 
 TipoRet dropCol(string nombreTabla, string nombreCol){
-    cout << "estas en dropCol, parmetros: "<<nombreTabla<<", "<<nombreCol <<endl;
+    TipoRet res = NO_IMPLEMENTADA;
+    int nroColBuscada;
+    extern ListaTabla LTabla;               //ListaTabla Global
+    ListaTabla auxTabla = LTabla;           //puntero auxiliar tipo ListaTabla
+    ListaColum auxColmun = NULL;
+    ListaColum borraColum;
+    ListaTupla auxTupla;
+    ListaCelda auxCelda;
+    ListaCelda borraCelda;
+    /** Busca si existe la tabla **/
+    while( auxTabla!=NULL ){
+        if( auxTabla->nombre == nombreTabla ){ //Si existe la tabla, se para apuntando sobre ella
+            auxColmun = auxTabla->columna;
+            while( auxColmun->sig != NULL ){  //Recorre la lista de columnas y chequea que no exista una columna con el mismo nombre
+                if( auxColmun->sig->nombre == nombreCol ){
+                    nroColBuscada = auxColmun->nroColum; //guarda el nuero de columna buscada
+                    if( auxColmun->sig->PK==true && auxTabla->nroColumna>1 ){//si hay mas de una columna no se pude borrar la pk
+                        cout<<"\tLa columna \""<<nombreCol<<"\" es Clave Primaria y hay otras columnas que se identifican por ella."<<endl;
+                        res = ERROR;
+                        return res;
+                    }
+                    else{
+                        borraColum = auxColmun->sig;
+                        auxColmun->sig = borraColum->sig;
+                        if( borraColum->sig != NULL ){//si el que se eliminio no es el ultimo elemento
+                            borraColum->sig->ant = auxColmun;
+                            auxColmun = auxTabla->columna;//regreso el puntero
+                            while( auxColmun->sig != NULL ){ //actualiza todo los nro de las columnas
+                                auxColmun->sig->nroColum = auxColmun->nroColum+1;
+                                auxColmun = auxColmun->sig;
+                            }
+                        }
+                        delete borraColum;
+                        auxTabla->nroColumna--;
+                        auxTupla = auxTabla->tupla->sig;//arranca en la tupla 1
+                        while( auxTupla != NULL ){ //Busca en todas las tuplas
+                            auxCelda = auxTupla->celda;
+                            while( auxCelda->sig!=NULL ){ //Elimina las celdas correspondientes a esa columna en cada tupla
+                                //si el nro de celda es igual al nro de columna
+                                if( auxCelda->sig->nroCelda == nroColBuscada ){
+                                    borraCelda = auxCelda->sig;
+                                    auxCelda = borraCelda->sig;
+                                    if( borraCelda->sig != NULL ){
+                                        borraCelda->sig->ant = auxCelda;
+                                        auxCelda = auxTupla->celda;  //vuelvo el puntero auxiliar a la posicion 0
+                                        while( auxCelda->sig!=NULL){ //hay que actualizar todos los nro de celdas
+                                            auxCelda->sig->nroCelda = auxCelda->nroCelda+1;
+                                            auxCelda = auxCelda->sig;
+                                        }
+                                    }
+                                    delete borraCelda;
+                                }
+                            }
+                        }
+                        cout<<"\tLa columna \""<<nombreCol<<"\" ha sido eliminada con existo"<<endl;
+                        res = OK;
+                        return res;
+                    }
+                }
+            }
+
+        }else{
+            auxTabla = auxTabla->sig;
+        }
+    }
+    cout<<"\tLa tabla \""<<nombreTabla<<"\" no existe."<<endl;
+    res = ERROR;
+    return res;
 }
 
 TipoRet insertInto(string nombreTabla, string valoresTupla){
@@ -262,8 +331,6 @@ TipoRet printDataTable(string nombreTabla){
     cout<<"\tLa tabla \""<<nombreTabla<<"\" no existe."<<endl;
     res = ERROR;
     return res;
-
-
 }
 
 void printHelp(){
@@ -346,8 +413,15 @@ void readInput(ListaTabla LTabla, string comando){
             cout<< "\tQuery ERROR -> No se realizo la operacion"<<endl;
     }
 
-    if( sentencia == "dropCol" && nroArg==2 ){ //   dropCol( nombreTabla, nombreCol)
-        cout<<"Sin terminar"<<endl;
+    if( sentencia == "dropCol" ){ //   dropCol( nombreTabla, nombreCol)
+        string nombreColumna = getParametro(listaArg, 2);
+        res = dropCol(nombreTabla, nombreColumna);
+        if(  res == 0 )
+            cout<< "\tQuery OK -> La columna \""<<nombreColumna<<"\" ha sido eliminada"<<endl;
+        if( res == 1)
+            cout<< "\tQuery ERROR -> No se puedo eliminar la columna \""<<nombreColumna<<"\""<<endl;
+        if( res == 2 )
+            cout<< "\tQuery ERROR -> No se realizo la operacion"<<endl;
     }
 
     if( sentencia == "insertInto" ){// insertInto( nombreTabla,valoresTupla")
