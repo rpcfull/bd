@@ -14,7 +14,7 @@ struct nodoListaArg{
     nodoListaArg * ant;
     nodoListaArg * sig;
 };
-typedef nodoListaArg * ListaAgr;
+typedef nodoListaArg * ListaArg;
 
 struct nodoListaCelda{
     int nroCelda;
@@ -68,11 +68,13 @@ TipoRet printDataTable(string nombreTabla);
 void readInput(ListaTabla T, string comando ); //Interpreta el comando de entrada
 void printHelp(); // Imprime la Ayuda con los comandos validos
 bool addTabla( ListaTabla T, string nombreTabla );
-string getParametro(ListaAgr L, int n);
-void imprimirArg(ListaAgr L);
-void clearArg(ListaAgr L);
-void addArgFinal(ListaAgr L, string arg);
-void cargarListaArg(ListaAgr L, string allArg);
+string getParametro(ListaArg L, int n);
+ListaArg crearListaArg();
+void imprimirArg(ListaArg L);
+void clearArg(ListaArg L);
+void addArgFinal(ListaArg L, string arg);
+void cargarListaArg(ListaArg L, string allArg, char separador);
+ListaTabla buscarTabla(ListaTabla L, string nombreTabla);
 
 int main(){
     extern ListaTabla LTabla;
@@ -205,7 +207,6 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
     ListaCelda auxCelda;
     ListaCelda borraCelda;
     /** Busca si existe la tabla **/
-
     while( auxTabla!=NULL ){
         if( auxTabla->nombre == nombreTabla ){ //Si existe la tabla, se para apuntando sobre ella
             auxColum = auxTabla->columna;
@@ -270,8 +271,14 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
 TipoRet insertInto(string nombreTabla, string valoresTupla){
     TipoRet res = OK;
     extern ListaTabla LTabla;               //ListaTabla Global
-    ListaTabla aux = LTabla;
-    cout << "estas en insertInto, parmetros: "<<nombreTabla<<", "<< valoresTupla <<endl;
+    ListaTabla auxTabla;
+    auxTabla = NULL;
+    ListaArg listaValores = crearListaArg();
+    cargarListaArg(listaValores, valoresTupla, ':');
+    imprimirArg(listaValores);
+    auxTabla = buscarTabla(LTabla, nombreTabla);
+    cout<< auxTabla->nombre;
+
 }
 
 TipoRet deleteFrom(string nombreTabla, string condicionEliminar){
@@ -293,7 +300,6 @@ TipoRet printDataTable(string nombreTabla){
     extern ListaTabla LTabla;               //ListaTabla Global
     ListaTabla auxTabla = LTabla;
     while( auxTabla!=NULL ){
-
         if( auxTabla->nombre == nombreTabla ){ //Si existe la tabla, para apuntando sobre ella
                 cout<<"  Tabla "<<auxTabla->nombre<<endl;
                 ListaColum auxColum = auxTabla->columna; //Puntero auxiliar para recorrer las columnas
@@ -380,11 +386,8 @@ void readInput(ListaTabla LTabla, string comando){
     string allArg = comando.substr(posApertura+1 ,(posCierre - posApertura -1)); // obtiene el contenido de los argumentos
 
     //Se cargan los argumentos recibidos en una lista
-    ListaAgr listaArg = new nodoListaArg;
-    listaArg->pos = 0;
-    listaArg->ant = NULL;
-    listaArg->sig = NULL;
-    cargarListaArg(listaArg, allArg);
+    ListaArg listaArg = crearListaArg();
+    cargarListaArg(listaArg, allArg, ',');
 
     string nombreTabla = getParametro(listaArg,1); //Obtiene el nombre de la tabla
 
@@ -427,7 +430,15 @@ void readInput(ListaTabla LTabla, string comando){
     }
 
     if( sentencia == "insertInto" ){// insertInto( nombreTabla,valoresTupla")
-        cout<<"Sin terminar"<<endl;
+        string valoresTupla = getParametro(listaArg, 2);
+        res = insertInto(nombreTabla, valoresTupla);
+        if(  res == 0 )
+            cout<< "\tQuery OK -> Se ha insertando un nuevo resitro en la tabla \""<<nombreTabla<<"\""<<endl;
+        if( res == 1)
+            cout<< "\tQuery ERROR -> No se puedo agregar el registro en la tabla \""<<nombreTabla<<"\""<<endl;
+        if( res == 2 )
+            cout<< "\tQuery ERROR -> No se realizo la operacion"<<endl;
+
     }
     if( sentencia == "deleteFrom" && nroArg==1 ){ //deleteFrom( nombreTabla, condicionEliminar )
         string condicionEliminar = getParametro(listaArg, 2);
@@ -456,16 +467,26 @@ void readInput(ListaTabla LTabla, string comando){
 }
 
 //Obtiene el parametro en la posicion n de la lista. Nota: debe recibir un n valido
-string getParametro(ListaAgr L, int n){
+string getParametro(ListaArg L, int n){
     if( L!=NULL && L->pos!=n )
         return getParametro(L->sig, n);
     if( L!=NULL && L->pos == n )
         return L->info;
 }
 
-void addArgFinal(ListaAgr L, string arg){
-    ListaAgr nuevo = new nodoListaArg;
-    ListaAgr aux = L;
+
+ListaArg crearListaArg(){
+    ListaArg listaArg = new nodoListaArg;
+    listaArg->pos = 0;
+    listaArg->ant = NULL;
+    listaArg->sig = NULL;
+    return listaArg;
+}
+
+
+void addArgFinal(ListaArg L, string arg){
+    ListaArg nuevo = new nodoListaArg;
+    ListaArg aux = L;
     nuevo->info = arg;
     nuevo->sig = NULL;
     while( aux->sig!=NULL )
@@ -475,22 +496,21 @@ void addArgFinal(ListaAgr L, string arg){
     nuevo->pos = aux->pos+1;
 }
 
-void imprimirArg(ListaAgr L){//esta funcion es solo para modo testing
+void imprimirArg(ListaArg L){//esta funcion es solo para modo testing
     if( L != NULL ){
         cout<< "|"<<L->pos<< " = "<<L->info<<"|"<<endl;
         imprimirArg( L->sig );
     }
 }
 
-void cargarListaArg(ListaAgr L, string allArg){
+void cargarListaArg(ListaArg L, string allArg, char separador){
     int largo = allArg.length();
     char parametros[largo];
     int inicio=0;
     string dato;
     strcpy(parametros,allArg.c_str());
-
     for(int i=0; i< largo; i++){
-        if( parametros[i]!=','){
+        if( parametros[i]!= separador){
             dato += parametros[i];
         }else{
             addArgFinal(L, dato);
@@ -499,4 +519,14 @@ void cargarListaArg(ListaAgr L, string allArg){
     }
     addArgFinal(L, dato);
 }
+
+ListaTabla buscarTabla(ListaTabla L, string nombreTabla){
+    if( L == NULL)
+        return NULL;
+    if( L->nombre != nombreTabla )
+        return buscarTabla( L->sig, nombreTabla);
+    else
+        return L;
+}
+
 
