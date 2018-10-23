@@ -74,7 +74,10 @@ void imprimirArg(ListaArg L);
 void clearArg(ListaArg L);
 void addArgFinal(ListaArg L, string arg);
 void cargarListaArg(ListaArg L, string allArg, char separador);
-ListaTabla buscarTabla(ListaTabla L, string nombreTabla);
+ListaTabla buscaTabla(ListaTabla L, string nombreTabla);
+ListaColum buscaColum(ListaColum L, string nombreColum);
+ListaCelda buscaCelda(ListaCelda L, int nroCelda);
+int lengthArg(ListaArg L);
 
 int main(){
     extern ListaTabla LTabla;
@@ -270,21 +273,30 @@ TipoRet dropCol(string nombreTabla, string nombreCol){
 
 TipoRet insertInto(string nombreTabla, string valoresTupla){
     TipoRet res = OK;
-    extern ListaTabla LTabla;               //ListaTabla Global
-    ListaTabla auxTabla;
-    auxTabla = NULL;
-    ListaArg listaValores = crearListaArg();
-    cargarListaArg(listaValores, valoresTupla, ':');
-    imprimirArg(listaValores);
-    auxTabla = buscarTabla(LTabla, nombreTabla);
-    cout<< auxTabla->nombre;
-
+    extern ListaTabla LTabla;                           //ListaTabla Global
+    ListaTabla auxTabla = NULL;
+    ListaTupla auxTupla = NULL;
+    ListaColum auxColum = NULL;
+    ListaCelda auxCelda = NULL;
+    ListaArg listaValores = crearListaArg();            //crea una lista de valores para recibir los argumentos
+    cargarListaArg(listaValores, valoresTupla, ':');    //carga los valores en una lista
+//    imprimirArg(listaValores);
+    auxTabla = buscaTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    if( auxTabla != NULL){
+        if( auxTabla->nroColumna == lengthArg(listaValores) ){//Chequea si la cantidad de valores esta correcta
+            auxTupla = auxTabla->tupla;
+            while( auxTupla- )
+        }
+    }
 }
 
 TipoRet deleteFrom(string nombreTabla, string condicionEliminar){
     TipoRet res = OK;
     extern ListaTabla LTabla;               //ListaTabla Global
     ListaTabla aux = LTabla;
+    ListaArg listaCondicion = crearListaArg();
+    cargarListaArg(listaCondicion, condicionEliminar, '=');
+    imprimirArg(listaCondicion);
     cout << "estas en deleteFrom, parmetros: "<<nombreTabla<<", "<<condicionEliminar <<endl;
 }
 
@@ -474,7 +486,6 @@ string getParametro(ListaArg L, int n){
         return L->info;
 }
 
-
 ListaArg crearListaArg(){
     ListaArg listaArg = new nodoListaArg;
     listaArg->pos = 0;
@@ -482,7 +493,6 @@ ListaArg crearListaArg(){
     listaArg->sig = NULL;
     return listaArg;
 }
-
 
 void addArgFinal(ListaArg L, string arg){
     ListaArg nuevo = new nodoListaArg;
@@ -494,6 +504,15 @@ void addArgFinal(ListaArg L, string arg){
     aux->sig = nuevo;
     nuevo->ant = aux;
     nuevo->pos = aux->pos+1;
+}
+
+int lengthArg(ListaArg L){ //obtiene el largo de la lista de argumentos
+    if( L == NULL )
+        return 0;
+    if( L->pos == 0 )
+        return lengthArg(L->sig);
+    else
+        return ( 1 + (lengthArg(L->sig)));
 }
 
 void imprimirArg(ListaArg L){//esta funcion es solo para modo testing
@@ -520,13 +539,32 @@ void cargarListaArg(ListaArg L, string allArg, char separador){
     addArgFinal(L, dato);
 }
 
-ListaTabla buscarTabla(ListaTabla L, string nombreTabla){
+ListaTabla buscaTabla(ListaTabla L, string nombreTabla){
     if( L == NULL)
         return NULL;
     if( L->nombre != nombreTabla )
-        return buscarTabla( L->sig, nombreTabla);
+        return buscaTabla( L->sig, nombreTabla);
     else
         return L;
 }
+
+ListaColum buscaColum(ListaColum L, string nombreColum){
+    if( L == NULL)
+        return NULL;
+    if( L->nombre != nombreColum )
+        return buscaColum( L->sig, nombreColum);
+    else
+        return L;
+}
+
+ListaCelda buscaCelda(ListaCelda L, int nroCelda){
+    if( L == NULL)
+        return NULL;
+    if( L->nroCelda != nroCelda )
+        return buscaCelda( L->sig, nroCelda);
+    else
+        return L;
+}
+
 
 
