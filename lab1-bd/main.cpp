@@ -77,6 +77,12 @@ void cargarListaArg(ListaArg L, string allArg, char separador);
 ListaTabla buscaTabla(ListaTabla L, string nombreTabla);
 ListaColum buscaColum(ListaColum L, string nombreColum);
 ListaCelda buscaCelda(ListaCelda L, int nroCelda);
+bool buscaTuplaPk(ListaTupla &sonda, string pk);//Recibe la pk y busca la tupla que lo tenga, si no esta devuelve NULL
+bool addTuplaOrdenada(ListaTupla &auxTupla, string pk);//agrega una nueva tupla de forma ordenada por su pk
+void addTuplaFinal(ListaTupla &auxTupla);    //agrega una nueva tupla al final de la lista
+void addTuplaSiguiente(ListaTupla &auxTupla);//agrega la siguiente tupla a la posicion actual
+void addCeldaFinal(ListaCelda &auxCelda, string dato);//agrega nueva celda al final de la lista
+void cargarTupla(ListaTupla &auxTupla, ListaArg listaArg);
 int lengthArg(ListaArg L);
 
 int main(){
@@ -276,16 +282,22 @@ TipoRet insertInto(string nombreTabla, string valoresTupla){
     extern ListaTabla LTabla;                           //ListaTabla Global
     ListaTabla auxTabla = NULL;
     ListaTupla auxTupla = NULL;
-    ListaColum auxColum = NULL;
-    ListaCelda auxCelda = NULL;
     ListaArg listaValores = crearListaArg();            //crea una lista de valores para recibir los argumentos
     cargarListaArg(listaValores, valoresTupla, ':');    //carga los valores en una lista
-//    imprimirArg(listaValores);
     auxTabla = buscaTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
-        if( auxTabla->nroColumna == lengthArg(listaValores) ){//Chequea si la cantidad de valores esta correcta
+        if( auxTabla->nroColumna == lengthArg(listaValores) ){//Chequea si la cantidad de valores pasados es igual a los campos que tiene a tabla
             auxTupla = auxTabla->tupla;
-            while( auxTupla- )
+            string pk = getParametro(listaValores, 1); //obtiene la pk cursada
+            if(addTuplaOrdenada(auxTupla, pk)){  //Devuelve true si pudo insertar la tupla de forma ordenada
+                cargarTupla(auxTupla, listaValores);
+                cout<<"\tNuevo registro agregado con exito"<<endl;
+                return res;
+            }else{
+                cout<<"\tNo se pudo insertar el registro"<<endl;
+                res = ERROR;
+                return res;
+            }
         }
     }
 }
@@ -402,6 +414,15 @@ void readInput(ListaTabla LTabla, string comando){
     cargarListaArg(listaArg, allArg, ',');
 
     string nombreTabla = getParametro(listaArg,1); //Obtiene el nombre de la tabla
+/*
+    createTable("Empleados");
+    addCol("Empleados", "id");
+    addCol("Empleados", "Nombre");
+    addCol("Empleados", "Apellido");
+    printDataTable("Empleados");
+    insertInto("Empleados", "3968069-5:Julio:Arrieta");
+    printDataTable("Empleados");
+*/
 
     if( sentencia=="createTable" ){ //createTable( nombreTabla )
         res = createTable(nombreTabla);
@@ -445,7 +466,7 @@ void readInput(ListaTabla LTabla, string comando){
         string valoresTupla = getParametro(listaArg, 2);
         res = insertInto(nombreTabla, valoresTupla);
         if(  res == 0 )
-            cout<< "\tQuery OK -> Se ha insertando un nuevo resitro en la tabla \""<<nombreTabla<<"\""<<endl;
+            cout<< "\tQuery OK -> Nuevo resitro en la tabla \""<<nombreTabla<<"\""<<endl;
         if( res == 1)
             cout<< "\tQuery ERROR -> No se puedo agregar el registro en la tabla \""<<nombreTabla<<"\""<<endl;
         if( res == 2 )
@@ -548,6 +569,27 @@ ListaTabla buscaTabla(ListaTabla L, string nombreTabla){
         return L;
 }
 
+/** Esta funcion busca la tupla por su PK y solo retorna true si la encentra, en ese caso el puntero recibido queda apuntando a
+dicho registro.
+Si no lo a encuentra pueden pasar dos cosas, o bien no existe el registro mayor y llega al final de la lista retornando false con
+el puntero a NULL.
+O tambien existe algun valor mayor a la pk y retorna false con el puntero en la posicion en la que debe insertar el nuevo registro.
+**/
+bool buscaTuplaPk(ListaTupla &sonda, string pk){
+    if( sonda->sig == NULL)
+        return false;
+    if( pk.compare(sonda->sig->celda->sig->info) > 0 ){
+        return buscaTuplaPk(sonda->sig->sig, pk);
+    }else{
+        if( pk.compare(sonda->sig->celda->sig->info) == 0 ){ //si es igual retorna true y el puntero en la posicion del pk buscado
+            return true;
+        }if( pk.compare(sonda->sig->celda->sig->info) < 0 ){
+            sonda = sonda->sig->ant; //apunta a la posicion en la que debe insertarse
+            return false;
+        }
+    }
+}
+
 ListaColum buscaColum(ListaColum L, string nombreColum){
     if( L == NULL)
         return NULL;
@@ -566,5 +608,72 @@ ListaCelda buscaCelda(ListaCelda L, int nroCelda){
         return L;
 }
 
+bool addTuplaOrdenada(ListaTupla &auxTupla, string pk){//agrega una nueva tupla de forma ordenada
+    ListaTupla sonda = auxTupla;
+    ListaCelda auxCelda;
 
+//cout<< "salida de busca tupla-> "<<buscaTuplaPk(sonda, pk)<<endl;
+    if( auxTupla->sig == NULL ){ //Si la primer tupla es NULL inserto en el primer lugar
+        addTuplaFinal(auxTupla);
+        /****Aqui falta el codigo para las celdas con los datos***/
+        return true;
+    }
+    if( buscaTuplaPk(sonda, pk)){//Si encontro un registro con la misma pk no se puede agregar el registro
+        return false;
+    }if( buscaTuplaPk(sonda, pk) == false && sonda != NULL ){
+        auxTupla = sonda;
+        addTuplaSiguiente(auxTupla);
+    }
+}
 
+void addTuplaFinal(ListaTupla &auxTupla){
+    if( auxTupla->sig == NULL ){
+        ListaTupla nueva = new nodoListaTupla;//Nueva tupla
+        nueva->ant = auxTupla;
+        nueva->sig = NULL;
+        nueva->indice = auxTupla->indice + 1;
+        auxTupla->sig = nueva;
+        auxTupla = nueva;
+        nueva->celda = new nodoListaCelda;//Celda dummy para la nuevta tupla
+        nueva->celda->ant = NULL;
+        nueva->celda->sig = NULL;
+        nueva->celda->nroCelda = 0;
+    }else
+        addTuplaFinal(auxTupla->sig);
+}
+
+void addTuplaSiguiente(ListaTupla &auxTupla){
+        ListaTupla nueva = new nodoListaTupla;//Nueva tupla
+        nueva->ant = auxTupla;
+        nueva->sig = auxTupla->sig;
+        nueva->indice = auxTupla->indice + 1;
+        auxTupla->sig = nueva;
+        auxTupla = nueva;
+        nueva->celda = new nodoListaCelda;//Celda dummy para la nuevta tupla
+        nueva->celda->ant = NULL;
+        nueva->celda->sig = NULL;
+        nueva->celda->nroCelda = 0;
+}
+
+void cargarTupla(ListaTupla &auxTupla, ListaArg listaArg){
+    int largo = lengthArg(listaArg);
+    ListaCelda nuevaCelda, auxCelda;
+    auxCelda = auxTupla->celda;
+    for( int i=1; i<= largo; i++ ){
+        addCeldaFinal(auxCelda, getParametro(listaArg, i));
+    }
+}
+
+void addCeldaFinal(ListaCelda &auxCelda, string dato){
+    if( auxCelda->sig != NULL )
+        return addCeldaFinal(auxCelda->sig, dato);
+    else{
+        ListaCelda nueva = new nodoListaCelda;
+        nueva->info = dato;
+        nueva->sig = NULL;
+        nueva->ant = auxCelda;
+        nueva->nroCelda = auxCelda->nroCelda++;
+        auxCelda->sig = nueva;
+        auxCelda = nueva;
+    }
+}
