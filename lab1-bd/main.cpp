@@ -576,16 +576,19 @@ el puntero a NULL.
 O tambien existe algun valor mayor a la pk y retorna false con el puntero en la posicion en la que debe insertar el nuevo registro.
 **/
 bool buscaTuplaPk(ListaTupla &sonda, string pk){
-    if( sonda->sig == NULL)
-        return false;
-    if( pk.compare(sonda->sig->celda->sig->info) > 0 ){
-        return buscaTuplaPk(sonda->sig->sig, pk);
-    }else{
-        if( pk.compare(sonda->sig->celda->sig->info) == 0 ){ //si es igual retorna true y el puntero en la posicion del pk buscado
-            return true;
-        }if( pk.compare(sonda->sig->celda->sig->info) < 0 ){
-            sonda = sonda->sig->ant; //apunta a la posicion en la que debe insertarse
+    while( sonda->sig!=NULL ){
+        if( sonda->sig == NULL)
             return false;
+        if( pk.compare(sonda->sig->celda->sig->info) > 0 ){
+            sonda = sonda->sig;
+            continue;
+        }else{
+            if( pk.compare(sonda->sig->celda->sig->info) == 0 ){ //si es igual retorna true y el puntero en la posicion del pk buscado
+                return true;
+            }if( pk.compare(sonda->sig->celda->sig->info) < 0 ){
+                //sonda = sonda->sig-> //apunta a la posicion en la que debe insertarse
+                return false;
+            }
         }
     }
 }
@@ -611,7 +614,6 @@ ListaCelda buscaCelda(ListaCelda L, int nroCelda){
 bool addTuplaOrdenada(ListaTupla &auxTupla, string pk){//agrega una nueva tupla de forma ordenada
     ListaTupla sonda = auxTupla;
     ListaCelda auxCelda;
-
 //cout<< "salida de busca tupla-> "<<buscaTuplaPk(sonda, pk)<<endl;
     if( auxTupla->sig == NULL ){ //Si la primer tupla es NULL inserto en el primer lugar
         addTuplaFinal(auxTupla);
@@ -665,15 +667,14 @@ void cargarTupla(ListaTupla &auxTupla, ListaArg listaArg){
 }
 
 void addCeldaFinal(ListaCelda &auxCelda, string dato){
-    if( auxCelda->sig != NULL )
-        return addCeldaFinal(auxCelda->sig, dato);
-    else{
-        ListaCelda nueva = new nodoListaCelda;
-        nueva->info = dato;
-        nueva->sig = NULL;
-        nueva->ant = auxCelda;
-        nueva->nroCelda = auxCelda->nroCelda++;
-        auxCelda->sig = nueva;
-        auxCelda = nueva;
+    while( auxCelda->sig != NULL ){
+        auxCelda = auxCelda->sig;
     }
+    ListaCelda nueva = new nodoListaCelda;
+    nueva->info = dato;
+    nueva->sig = NULL;
+    nueva->ant = auxCelda;
+    nueva->nroCelda = auxCelda->nroCelda +1;
+    auxCelda->sig = nueva;
+    auxCelda = nueva;
 }
