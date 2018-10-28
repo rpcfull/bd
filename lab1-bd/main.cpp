@@ -82,7 +82,7 @@ bool addTuplaOrdenada(ListaTupla &auxTupla, string pk, ListaArg listaValores);//
 void addTuplaFinal(ListaTupla &auxTupla, ListaArg listaValores);    //agrega una nueva tupla al final de la lista
 void addTuplaSiguiente(ListaTupla &auxTupla, ListaArg listaValores);//agrega la siguiente tupla a la posicion actual
 void addCeldaFinal(ListaCelda &auxCelda, string dato);//agrega nueva celda al final de la lista
-void ordenarIndices(ListaTupla auxTupla);
+void ordenarIndices(ListaTupla &auxTupla);
 void cargarTupla(ListaTupla &auxTupla, ListaArg listaArg);
 int lengthArg(ListaArg L);
 char getOperador( string condicion);
@@ -91,6 +91,7 @@ void borrarTupla(ListaTupla &auxTupla); //Borra la tupla actual
 void borrarCeldasTupla(ListaCelda &auxCelda);
 void borrarCelda(ListaCelda &auxCelda, int nroCelda);
 bool comienzaCon(string valor, string datoCelda); //Comprueba si el dato de una celda comienda con un determinado valor
+void modificarCelda(ListaCelda &auxCelda, int nroCelda, string nuevoValor);
 
 int test = 0;
 
@@ -325,12 +326,10 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
     auxTabla = buscaTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
     if( auxTabla != NULL){
         int nroColumna = buscaColuma(auxTabla->columna, nombreColumna); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
-        if( nroColumna != 1000){ //Cheque que exista la columna
-            cout<< "La columna existe y su posicion es " << nroColumna<<endl;
+        if( nroColumna != 1000){ //Chequea que exista la columna
             auxTupla = auxTabla->tupla; //Puntero auxiliar para recorrer las tuplas
             while( auxTupla!= NULL ){
-                ordenarIndices(auxTupla);
-                //auxTupla = buscaTuplaValor(auxTabla->tupla, nroColumna, operador, valorCondicion);
+
                 auxCelda = auxTupla->celda;
                 if( compararCelda( auxCelda, nroColumna, operador, valorCondicion) ){
                     cout<<"El registro nro "<< auxTupla->indice <<" contiene: "<< auxCelda->sig->sig->info<<" "<<auxCelda->sig->sig->sig->info  <<endl;
@@ -339,13 +338,12 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
                 }
                 auxTupla = auxTupla->sig;
             }
+            ordenarIndices(auxTupla);
         }
         else{
             cout<< "No hay campo con ese nombre"<<endl;
         }
     }
-  //  imprimirArg(listaCondicion);
-  //  cout << "El operador es -> "<<operador <<endl;
 
 
 }
@@ -353,8 +351,35 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
 TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar ){
     TipoRet res = OK;
     extern ListaTabla LTabla;               //ListaTabla Global
-    ListaTabla aux = LTabla;
-    cout << "estas en update, parmetros: "<<nombreTabla<<", "<<condicionModificar <<", "<< columnaModificar<<", "<< valorModificar <<endl;
+    ListaTabla auxTabla = NULL;                //Tabla auxiliar
+    ListaTupla auxTupla = NULL;
+    ListaCelda auxCelda = NULL;
+    char operador = getOperador(condicionModificar); //obtiene el operador de la condicion a buscar
+    ListaArg listaCondicion = crearListaArg();           //Crea una lista con las condiciones
+    cargarListaArg(listaCondicion, condicionModificar, operador); // Separa ambas partes de la condicion
+    string columnaCondicion = getParametro(listaCondicion,1);// Nombre de la columna por la cual filtrar
+    string valorCondicion   = getParametro(listaCondicion,2); //Valor que debe cumplir el filtro
+
+    auxTabla = buscaTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    if( auxTabla != NULL){
+        int nroColumnaMod = buscaColuma(auxTabla->columna, columnaModificar); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
+        int nroColumnaCond = buscaColuma(auxTabla->columna, columnaCondicion);
+        if( nroColumnaCond != 1000  && nroColumnaMod != 1000 ){ //Chequea que existan ambas columnas en la tabla
+            auxTupla = auxTabla->tupla; //Puntero auxiliar para recorrer las tuplas
+            while( auxTupla!= NULL ){
+
+                auxCelda = auxTupla->celda;
+                if( compararCelda( auxCelda, nroColumnaCond, operador, valorCondicion) ){
+                    cout<<"El registro nro "<< auxTupla->indice <<" contiene: "<< auxCelda->sig->sig->info<<" "<<auxCelda->sig->sig->sig->info  <<endl;
+                    modificarCelda( auxCelda, nroColumnaMod, valorModificar);
+                }
+                auxTupla = auxTupla->sig;
+            }
+        }
+        else{
+            cout<< "No hay campo con ese nombre"<<endl;
+        }
+    }
 }
 
 TipoRet printDataTable(string nombreTabla){
@@ -464,8 +489,6 @@ void readInput(ListaTabla LTabla, string comando){
         insertInto("Empleados", "3968289-5:Pedro:Almodovar:Calle 13");
         insertInto("Empleados", "2598099-3:Roberto:Gimenez:Av siempre vivas 1234");
         insertInto("Empleados", "1928059-2:Ana:Perez:Asamblea 539");
-        cout<< "Datos iniciales para testing"<<endl;
-        printDataTable("Empleados");
         test = 1;
     }
 
@@ -530,7 +553,16 @@ void readInput(ListaTabla LTabla, string comando){
 
     }
     if( sentencia == "update" ){ // update( nombreTabla, condicionModificar, columnaModificar, valorModificar)
-
+        string condModificar = getParametro(listaArg, 2);
+        string columna = getParametro(listaArg, 3);
+        string valoModificar = getParametro(listaArg, 4);
+        res = update(nombreTabla, condModificar, columna, valoModificar);
+        if(  res == 0 )
+            cout<< "\tQuery OK -> El registro se ha actualizado correctamente "<<endl;
+        if( res == 1)
+            cout<< "\tQuery ERROR -> Error al actulizar el registro"<<endl;
+        if( res == 2 )
+            cout<< "\tQuery ERROR -> No se realizo la operacion"<<endl;
     }
 
     if( sentencia == "printDataTable" ){  // printDataTable( nombreTabla );
@@ -738,7 +770,7 @@ bool buscaTuplaPk(ListaTupla &sonda, string pk){
 
 //Busca una columna por su nombre y retorna la posicion de la columna, o  retorna 1000 si no la encuentra
 int buscaColuma(ListaColum L, string nombreColum){
-    while( L->sig != NULL ){
+    while( L != NULL ){
         if(L->nombre == nombreColum)
             return L->nroColum;
         else
@@ -791,6 +823,7 @@ void addTuplaFinal(ListaTupla &auxTupla, ListaArg listaValores){
         nueva->celda->sig = NULL;
         nueva->celda->nroCelda = 0;
         cargarTupla(auxTupla, listaValores);
+        ordenarIndices(auxTupla);
     }else
         addTuplaFinal(auxTupla->sig, listaValores);
 }
@@ -808,6 +841,7 @@ void addTuplaSiguiente(ListaTupla &auxTupla, ListaArg listaValores){
         auxTupla->celda->sig = NULL;
         auxTupla->celda->nroCelda = 0;
         cargarTupla(auxTupla, listaValores);
+        ordenarIndices(auxTupla);
 }
 
 void cargarTupla(ListaTupla &auxTupla, ListaArg listaArg){
@@ -827,8 +861,6 @@ void cargarTupla(ListaTupla &auxTupla, ListaArg listaArg){
     }
 }
 
-
-
 char getOperador(string condicion){//Obtiene el operador para las comparaciones cursado en un string
     int largo = condicion.length();
     char arrCondicion[largo];
@@ -842,10 +874,20 @@ char getOperador(string condicion){//Obtiene el operador para las comparaciones 
     }
 }
 
-void ordenarIndices(ListaTupla auxTupla){//Ordena los indices de las tuplas
-    if( auxTupla->sig != NULL ){
-        auxTupla->sig->indice = auxTupla->indice + 1;
-        ordenarIndices(auxTupla->sig);
+void ordenarIndices(ListaTupla &auxTupla){//Ordena los indices de las tuplas
+    while( auxTupla->ant != NULL )
+        auxTupla = auxTupla->ant;
+    auxTupla = auxTupla->sig;
+    while( auxTupla != NULL ){
+        auxTupla->indice = auxTupla->ant->indice + 1;
+        auxTupla = auxTupla->sig;
     }
 }
 
+void modificarCelda(ListaCelda &auxCelda, int nroCelda, string nuevoValor){
+  //  ListaCelda aux = auxCelda;
+    while( auxCelda != NULL && auxCelda->nroCelda != nroCelda )
+        auxCelda = auxCelda->sig;
+    if( auxCelda->nroCelda == nroCelda )
+        auxCelda->info = nuevoValor;
+}
