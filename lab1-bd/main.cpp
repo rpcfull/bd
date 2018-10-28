@@ -74,16 +74,25 @@ void imprimirArg(ListaArg L);
 void clearArg(ListaArg L);
 void addArgFinal(ListaArg L, string arg);
 void cargarListaArg(ListaArg L, string allArg, char separador);
-ListaTabla buscaTabla(ListaTabla L, string nombreTabla);
-ListaColum buscaColum(ListaColum L, string nombreColum);
-ListaCelda buscaCelda(ListaCelda L, int nroCelda);
+ListaTabla buscaTabla(ListaTabla &LTabla, string nombreTabla);
+int buscaColuma(ListaColum L, string nombreColum); //Busca una columna por su nombre y retorna su posicion
+bool compararCelda(ListaCelda L, int nroCelda, char operador, string valor); //compara celdas y retorna un boolean
 bool buscaTuplaPk(ListaTupla &sonda, string pk);//Recibe la pk y busca la tupla que lo tenga, si no esta devuelve NULL
 bool addTuplaOrdenada(ListaTupla &auxTupla, string pk);//agrega una nueva tupla de forma ordenada por su pk
 void addTuplaFinal(ListaTupla &auxTupla);    //agrega una nueva tupla al final de la lista
 void addTuplaSiguiente(ListaTupla &auxTupla);//agrega la siguiente tupla a la posicion actual
 void addCeldaFinal(ListaCelda &auxCelda, string dato);//agrega nueva celda al final de la lista
+void ordenarIndices(ListaTupla auxTupla);
 void cargarTupla(ListaTupla &auxTupla, ListaArg listaArg);
 int lengthArg(ListaArg L);
+char getOperador( string condicion);
+ListaTupla buscaTuplaValor(ListaTupla L, int nroColumna, char operador, string valor); //retorna un puntero a la tupla buscada
+void borrarTupla(ListaTupla &auxTuple); //Borra la tupla actual
+void borrarCeldasTupla(ListaCelda &auxCelda);
+void borrarCelda(ListaCelda &auxCelda, int nroCelda);
+bool comienzaCon(string valor, string datoCelda); //Comprueba si el dato de una celda comienda con un determinado valor
+
+int test = 0;
 
 int main(){
     extern ListaTabla LTabla;
@@ -302,14 +311,41 @@ TipoRet insertInto(string nombreTabla, string valoresTupla){
     }
 }
 
-TipoRet deleteFrom(string nombreTabla, string condicionEliminar){
+TipoRet deleteFrom(string nombreTabla, string condicion){
     TipoRet res = OK;
     extern ListaTabla LTabla;               //ListaTabla Global
-    ListaTabla aux = LTabla;
-    ListaArg listaCondicion = crearListaArg();
-    cargarListaArg(listaCondicion, condicionEliminar, '=');
-    imprimirArg(listaCondicion);
-    cout << "estas en deleteFrom, parmetros: "<<nombreTabla<<", "<<condicionEliminar <<endl;
+    ListaTabla auxTabla = NULL;                //Tabla auxiliar
+    ListaTupla auxTupla = NULL;
+    ListaCelda auxCelda = NULL;
+    char operador = getOperador(condicion); //obtiene el operador de la condicion a buscar
+    ListaArg listaCondicion = crearListaArg(); //crea una lista con las condiciones
+    cargarListaArg(listaCondicion, condicion, operador); // separa ambas partes de la condicion
+    string nombreColumna    = getParametro(listaCondicion,1);
+    string valorCondicion   = getParametro(listaCondicion,2);
+    auxTabla = buscaTabla(LTabla, nombreTabla); //si la tabla existe devuelve el puntero a ella, si no el puntero es NULL
+    if( auxTabla != NULL){
+        int nroColumna = buscaColuma(auxTabla->columna, nombreColumna); //si el nombre de la columna existe retorna su posicion, si no retorna 1000
+        if( nroColumna != 1000){ //Cheque que exista la columna
+            cout<< "La columna existe y su posicion es " << nroColumna<<endl;
+            auxTupla = auxTabla->tupla->sig; //Puntero auxiliar para recorrer las tuplas
+            while( auxTupla!= NULL ){
+                //auxTupla = buscaTuplaValor(auxTabla->tupla, nroColumna, operador, valorCondicion);
+                auxCelda = auxTupla->celda;
+                if( compararCelda( auxCelda, nroColumna, operador, valorCondicion) ){
+                    cout<<"El registro nro "<< auxTupla->indice <<" contiene: "<< auxCelda->sig->sig->info<<" "<<auxCelda->sig->sig->sig->info  <<endl;
+                    borrarCeldasTupla(auxCelda);
+                }
+                auxTupla = auxTupla->sig;
+            }
+        }
+        else{
+            cout<< "No hay campo con ese nombre"<<endl;
+        }
+    }
+  //  imprimirArg(listaCondicion);
+  //  cout << "El operador es -> "<<operador <<endl;
+
+
 }
 
 TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar ){
@@ -387,7 +423,6 @@ void printHelp(){
     cout << "\t\tEjemplo:\t\tprintDataTable(Clientes)"<<endl<<endl;
 }
 
-
 /****************     LEE EL INGRESO DE LOS COMANDOS     ************************/
 void readInput(ListaTabla LTabla, string comando){
     TipoRet res;
@@ -414,15 +449,23 @@ void readInput(ListaTabla LTabla, string comando){
     cargarListaArg(listaArg, allArg, ',');
 
     string nombreTabla = getParametro(listaArg,1); //Obtiene el nombre de la tabla
-/*
-    createTable("Empleados");
-    addCol("Empleados", "id");
-    addCol("Empleados", "Nombre");
-    addCol("Empleados", "Apellido");
-    printDataTable("Empleados");
-    insertInto("Empleados", "3968069-5:Julio:Arrieta");
-    printDataTable("Empleados");
-*/
+
+    extern int test;
+    if( test == 0 ){
+        createTable("Empleados");
+        addCol("Empleados", "Id");
+        addCol("Empleados", "Nombre");
+        addCol("Empleados", "Apellido");
+        addCol("Empleados", "Direccion");
+        insertInto("Empleados", "3976069-5:Juan:Garcia:Emilio Frugoni 740");
+        insertInto("Empleados", "4239223-9:Maria:Gonzalez:18 de julio 2567");
+        insertInto("Empleados", "3968289-5:Pedro:Almodovar:Calle 13");
+        insertInto("Empleados", "2598099-3:Roberto:Gimenez:Av siempre vivas 1234");
+        insertInto("Empleados", "1928059-2:Ana:Perez:Asamblea 539");
+        cout<< "Datos iniciales para testing"<<endl;
+        printDataTable("Empleados");
+        test = 1;
+    }
 
     if( sentencia=="createTable" ){ //createTable( nombreTabla )
         res = createTable(nombreTabla);
@@ -473,7 +516,7 @@ void readInput(ListaTabla LTabla, string comando){
             cout<< "\tQuery ERROR -> No se realizo la operacion"<<endl;
 
     }
-    if( sentencia == "deleteFrom" && nroArg==1 ){ //deleteFrom( nombreTabla, condicionEliminar )
+    if( sentencia == "deleteFrom" ){ //deleteFrom( nombreTabla, condicionEliminar )
         string condicionEliminar = getParametro(listaArg, 2);
         res = deleteFrom(nombreTabla, condicionEliminar);
         if(  res == 0 )
@@ -484,8 +527,10 @@ void readInput(ListaTabla LTabla, string comando){
             cout<< "\tQuery ERROR -> No se realizo la operacion"<<endl;
 
     }
-    if( sentencia == "update" ) // update( nombreTabla, condicionModificar, columnaModificar, valorModificar)
-        cout<<"Sin terminar"<<endl;
+    if( sentencia == "update" ){ // update( nombreTabla, condicionModificar, columnaModificar, valorModificar)
+
+    }
+
     if( sentencia == "printDataTable" ){  // printDataTable( nombreTabla );
         res = printDataTable(nombreTabla);
         if( res == 0 )
@@ -505,6 +550,101 @@ string getParametro(ListaArg L, int n){
         return getParametro(L->sig, n);
     if( L!=NULL && L->pos == n )
         return L->info;
+}
+
+void borrarTupla(ListaTupla &auxTupla){
+    ListaTupla borrar = auxTupla;
+    auxTupla = auxTupla->ant;   //se mueve un lugar hacia atras para borrar el nodo actual
+    auxTupla->sig = borrar->sig;
+    if( borrar->sig != NULL )
+        borrar->sig->ant = auxTupla;
+    delete borrar;
+}
+
+void borrarCelda(ListaCelda &auxCelda, int nroCelda){
+    if( auxCelda->sig != NULL && auxCelda->sig->nroCelda != nroCelda)
+        borrarCelda(auxCelda->sig, nroCelda);
+    if( auxCelda->sig != NULL && auxCelda->sig->nroCelda == nroCelda){
+        ListaCelda borra = auxCelda->sig;
+        auxCelda->sig = borra->sig;
+        if( borra->sig != NULL )
+            borra->sig->ant = auxCelda;
+        delete borra;
+    }
+}
+
+void borrarCeldasTupla(ListaCelda &auxCelda){//borra todas las celdas
+    while( auxCelda!=NULL ){
+        ListaCelda borrar = auxCelda;
+        auxCelda = auxCelda->sig;
+        delete borrar;
+    }
+}
+
+/******/
+ListaTupla buscaTuplaValor(ListaTupla L, int nroColumna, char operador, string valor){
+    if( L != NULL ){
+        if( compararCelda(L->celda, nroColumna, operador, valor) ){
+            return L;
+        }else{
+            return buscaTuplaValor(L->sig, nroColumna, operador, valor);
+        }
+    }
+}
+/*** Va hasta el nroCelda indicado, realiza la comparacion y retorna un bool **/
+bool compararCelda(ListaCelda L, int nroCelda, char operador, string valor){
+    while( L->sig!= NULL && L->nroCelda != nroCelda ){
+        L = L->sig;
+    }
+
+    if( operador == '=' ){
+        if( valor.compare(L->info) == 0 )
+            return true;
+        else
+            return false;
+    }
+    if( operador == '<' ){
+        if( valor.compare(L->info) < 0 )
+            return true;
+        else
+            return false;
+    }
+    if( operador == '>' ){
+        if( valor.compare(L->info) > 0 )
+            return true;
+        else
+            return false;
+    }
+    if( operador == '!' ){
+        if( valor.compare(L->info) != 0 )
+            return true;
+        else
+            return false;
+    }
+
+    if( operador == '*' ){
+        if( comienzaCon(valor, L->info) )
+            return true;
+        else
+            return false;
+    }
+
+}
+
+//Fucion para comparar el incio de un string con otro
+bool comienzaCon(string valor, string datoCelda){
+    int largoValor = valor.length();
+    int largoDato  = datoCelda.length();
+    if( largoDato >= largoValor ){
+        size_t posFin = largoValor;
+        string datoCorto = datoCelda.substr(0, posFin);
+        if( valor.compare(datoCorto) == 0 )//Si el valor es igual al inicio del valor de la celda retorna true
+            return true;
+        else
+            return false;
+    }else
+        return false;
+
 }
 
 ListaArg crearListaArg(){
@@ -543,7 +683,7 @@ void imprimirArg(ListaArg L){//esta funcion es solo para modo testing
     }
 }
 
-void cargarListaArg(ListaArg L, string allArg, char separador){
+void cargarListaArg(ListaArg L, string allArg, char separador){//Carga una lista de argumentos
     int largo = allArg.length();
     char parametros[largo];
     int inicio=0;
@@ -560,13 +700,13 @@ void cargarListaArg(ListaArg L, string allArg, char separador){
     addArgFinal(L, dato);
 }
 
-ListaTabla buscaTabla(ListaTabla L, string nombreTabla){
-    if( L == NULL)
+ListaTabla buscaTabla(ListaTabla &LTabla, string nombreTabla){ //Busca una tabla por su nombre
+    if( LTabla == NULL)
         return NULL;
-    if( L->nombre != nombreTabla )
-        return buscaTabla( L->sig, nombreTabla);
+    if( LTabla->nombre != nombreTabla )
+        return buscaTabla( LTabla->sig, nombreTabla);
     else
-        return L;
+        return LTabla;
 }
 
 /** Esta funcion busca la tupla por su PK y solo retorna true si la encentra, en ese caso el puntero recibido queda apuntando a
@@ -593,13 +733,15 @@ bool buscaTuplaPk(ListaTupla &sonda, string pk){
     }
 }
 
-ListaColum buscaColum(ListaColum L, string nombreColum){
-    if( L == NULL)
-        return NULL;
-    if( L->nombre != nombreColum )
-        return buscaColum( L->sig, nombreColum);
-    else
-        return L;
+//Busca una columna por su nombre y retorna la posicion de la columna, o  retorna 1000 si no la encuentra
+int buscaColuma(ListaColum L, string nombreColum){
+    while( L->sig != NULL ){
+        if(L->nombre == nombreColum)
+            return L->nroColum;
+        else
+            L = L->sig;
+    }
+    return 1000;
 }
 
 ListaCelda buscaCelda(ListaCelda L, int nroCelda){
@@ -648,8 +790,9 @@ void addTuplaSiguiente(ListaTupla &auxTupla){
         ListaTupla nueva = new nodoListaTupla;//Nueva tupla
         nueva->ant = auxTupla;
         nueva->sig = auxTupla->sig;
-        nueva->indice = auxTupla->indice + 1;
+
         auxTupla->sig = nueva;
+        ordenarIndices(auxTupla);
         auxTupla = nueva;
         nueva->celda = new nodoListaCelda;//Celda dummy para la nuevta tupla
         nueva->celda->ant = NULL;
@@ -666,7 +809,7 @@ void cargarTupla(ListaTupla &auxTupla, ListaArg listaArg){
     }
 }
 
-void addCeldaFinal(ListaCelda &auxCelda, string dato){
+void addCeldaFinal(ListaCelda &auxCelda, string dato){ //agrega una celda al final
     while( auxCelda->sig != NULL ){
         auxCelda = auxCelda->sig;
     }
@@ -678,3 +821,24 @@ void addCeldaFinal(ListaCelda &auxCelda, string dato){
     auxCelda->sig = nueva;
     auxCelda = nueva;
 }
+
+char getOperador(string condicion){//Obtiene el operador para las comparaciones cursado en un string
+    int largo = condicion.length();
+    char arrCondicion[largo];
+    strcpy(arrCondicion,condicion.c_str());
+    char c;
+    for(int i=0; i<largo; i++){
+        c = arrCondicion[i];
+        if( c=='*' || c=='<' || c=='>' || c=='!' || c=='='){
+            return c;
+        }
+    }
+}
+
+void ordenarIndices(ListaTupla auxTupla){//Ordena los indices de las tuplas
+    if( auxTupla->sig != NULL ){
+        auxTupla->sig->indice = auxTupla->indice + 1;
+        ordenarIndices(auxTupla->sig);
+    }
+}
+
