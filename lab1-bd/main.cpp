@@ -343,9 +343,8 @@ TipoRet deleteFrom(string nombreTabla, string condicion){
         else{
             cout<< "No hay campo con ese nombre"<<endl;
         }
+
     }
-
-
 }
 
 TipoRet update(string nombreTabla, string condicionModificar, string columnaModificar, string valorModificar ){
@@ -875,9 +874,11 @@ char getOperador(string condicion){//Obtiene el operador para las comparaciones 
 }
 
 void ordenarIndices(ListaTupla &auxTupla){//Ordena los indices de las tuplas
-    while( auxTupla->ant != NULL )
+   /* if( auxTupla )
+    while( auxTupla != NULL && auxTupla->ant != NULL )
         auxTupla = auxTupla->ant;
     auxTupla = auxTupla->sig;
+    */
     while( auxTupla != NULL ){
         auxTupla->indice = auxTupla->ant->indice + 1;
         auxTupla = auxTupla->sig;
