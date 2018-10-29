@@ -368,15 +368,22 @@ TipoRet update(string nombreTabla, string condicionModificar, string columnaModi
             while( auxTupla!= NULL ){
 
                 auxCelda = auxTupla->celda;
-                if( compararCelda( auxCelda, nroColumnaCond, operador, valorCondicion) ){
-                    cout<<"El registro nro "<< auxTupla->indice <<" contiene: "<< auxCelda->sig->sig->info<<" "<<auxCelda->sig->sig->sig->info  <<endl;
+                if( !condicionModificar.empty() ){
+                    if( compararCelda( auxCelda, nroColumnaCond, operador, valorCondicion) ){
+                        cout<<"El registro nro "<< auxTupla->indice <<" contiene: "<< auxCelda->sig->sig->info<<" "<<auxCelda->sig->sig->sig->info  <<endl;
+                        modificarCelda( auxCelda, nroColumnaMod, valorModificar);
+                    }
+                }else{
                     modificarCelda( auxCelda, nroColumnaMod, valorModificar);
                 }
                 auxTupla = auxTupla->sig;
             }
+            return res;
         }
         else{
             cout<< "No hay campo con ese nombre"<<endl;
+            res = ERROR;
+            return res;
         }
     }
 }
@@ -886,9 +893,10 @@ void ordenarIndices(ListaTupla &auxTupla){//Ordena los indices de las tuplas
 }
 
 void modificarCelda(ListaCelda &auxCelda, int nroCelda, string nuevoValor){
-  //  ListaCelda aux = auxCelda;
-    while( auxCelda != NULL && auxCelda->nroCelda != nroCelda )
-        auxCelda = auxCelda->sig;
-    if( auxCelda->nroCelda == nroCelda )
+    if( auxCelda==NULL)
+        return;
+    if( auxCelda!=NULL && auxCelda->nroCelda!=nroCelda )
+        modificarCelda(auxCelda->sig, nroCelda, nuevoValor);
+    else
         auxCelda->info = nuevoValor;
 }
